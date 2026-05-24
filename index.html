@@ -23,6 +23,7 @@
             padding: 20px;
             box-sizing: border-box;
             position: relative;
+            overflow: hidden;
         }
 
         .container {
@@ -129,16 +130,77 @@
         .fire-btn:active {
             transform: scale(0.95);
         }
+
+        /* מודאל פופ-אפ אסטטי לאישור השליחה */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #1e1e1e;
+            padding: 30px;
+            border-radius: 20px;
+            border: 2px solid #4caf50;
+            text-align: center;
+            max-width: 300px;
+            width: 80%;
+            box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .success-icon {
+            font-size: 50px;
+            color: #4caf50;
+            margin-bottom: 15px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+
+        .modal-text {
+            color: #aaaaaa;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .close-modal-btn {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        @keyframes fadeIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body>
 
-    <button id="settingsBtn" class="settings-btn" onclick="showLoginScreen(true)">⚙️ שינוי הגדרות</button>
+    <button id="settingsBtn" class="settings-btn" onclick="showLoginScreen(true)">⚙️ הגדרות</button>
 
     <div class="container">
         <div id="loginScreen" class="login-box">
             <h1>הגדרת כפתור חירום</h1>
-            <p>הזן את נתוני המערכת שלכם</p>
+            <p>הזן פרטים חד-פעמית להפעלת המערכת</p>
             
             <div class="input-group">
                 <label>שם מלא (עברית):</label>
@@ -147,12 +209,12 @@
 
             <div class="input-group">
                 <label>Application Token (מפתח אפליקציה):</label>
-                <input type="text" id="appTokenInput" placeholder="הזן APP TOKEN חדש ותקין">
+                <input type="text" id="appTokenInput" placeholder="הזן APP TOKEN">
             </div>
             
             <div class="input-group">
                 <label>Group Key (מפתח קבוצה):</label>
-                <input type="text" id="groupKeyInput" placeholder="הזן GROUP KEY חדש ותקין">
+                <input type="text" id="groupKeyInput" placeholder="הזן GROUP KEY">
             </div>
             
             <button class="submit-btn" onclick="saveAndContinue()">שמירה וכניסה</button>
@@ -162,7 +224,7 @@
             <h1 id="welcomeTitle">כיתת כוננות</h1>
             <p>לחיצה על הכפתור תזניק אזעקת חירום לכולם</p>
             
-            <form action="https://api.pushover.net/1/messages.json" method="POST" onsubmit="updateMessageField()">
+            <form action="https://api.pushover.net/1/messages.json" method="POST" target="hidden_iframe" onsubmit="handleSubmit()">
                 <input type="hidden" name="token" id="formAppToken">
                 <input type="hidden" name="user" id="formGroupKey">
                 <input type="hidden" name="message" id="formMessage">
@@ -175,6 +237,17 @@
             </form>
         </div>
     </div>
+
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <div class="success-icon">✓</div>
+            <div class="modal-title">האזעקה שוגרה!</div>
+            <div class="modal-text">ההודעה הועברה בהצלחה לכל חברי כיתת הכוננות.</div>
+            <button class="close-modal-btn" onclick="closeModal()">סגור</button>
+        </div>
+    </div>
+
+    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
 
     <script>
         var backupName = "";
@@ -236,7 +309,8 @@
             document.getElementById("loginScreen").style.display = "block";
         }
 
-        function updateMessageField() {
+        function handleSubmit() {
+            // 1. הכנת השדות לשילוח
             var currentName = "משתמש";
             var appToken = "";
             var groupKey = "";
@@ -251,10 +325,16 @@
                 groupKey = backupGroupKey;
             }
 
-            // הזנת הנתונים הפרטיים שהמשתמש שמר לתוך הטופס רגע לפני המשלוח
             document.getElementById("formAppToken").value = appToken;
             document.getElementById("formGroupKey").value = groupKey;
             document.getElementById("formMessage").value = "*** הקפצת חירום *** | הופעל על ידי: " + currentName;
+
+            // 2. פתיחת חלון האישור המעוצב מיד עם הלחיצה
+            document.getElementById("successModal").style.display = "flex";
+        }
+
+        function closeModal() {
+            document.getElementById("successModal").style.display = "none";
         }
     </script>
 
