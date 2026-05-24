@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>הקפצת כיתת כוננות</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="הקפצה">
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+            color: #ff4d4d;
+        }
+
+        p {
+            font-size: 16px;
+            color: #aaaaaa;
+            margin-bottom: 30px;
+        }
+
+        .login-box {
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            text-align: right;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #ccc;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background-color: #2a2a2a;
+            color: white;
+            font-size: 16px;
+            box-sizing: border-box;
+            outline: none;
+            text-align: center;
+        }
+
+        input:focus {
+            border-color: #ff4d4d;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #mainScreen {
+            display: none;
+        }
+
+        .fire-btn {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ff3333 0%, #b30000 100%);
+            border: 5px solid #ffffff;
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+            outline: none;
+            transition: transform 0.1s, box-shadow 0.1s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .fire-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.8), inset 0 0 25px rgba(0, 0, 0, 0.8);
+        }
+
+        #status {
+            margin-top: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #4caf50;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="loginScreen" class="login-box">
+            <h1>רישום למערכת</h1>
+            <p>הזן פרטים חד-פעמית להפעלת המערכת</p>
+            
+            <div class="input-group">
+                <label>User Name (שם מלא בעברית):</label>
+                <input type="text" id="userNameInput" placeholder="ישראל ישראלי">
+            </div>
+            
+            <div class="input-group">
+                <label>ID KEY / USER KEY (מפתח משתמש):</label>
+                <input type="text" id="idKeyInput" placeholder="הזן את ה-User Key האישי">
+            </div>
+            
+            <button class="submit-btn" onclick="saveAndContinue()">אישור וכניסה</button>
+        </div>
+
+        <div id="mainScreen">
+            <h1 id="welcomeTitle">כיתת כוננות</h1>
+            <p>לחיצה על הכפתור תזניק אזעקת חירום לכולם</p>
+            
+            <button class="fire-btn" onclick="sendEmergencyTrigger()">הקפצה</button>
+            
+            <div id="status"></div>
+        </div>
+    </div>
+
+    <script>
+        var APP_TOKEN = "adsayoojtjtyshok8nbz69kscjunpt";
+        
+        var backupName = "";
+        var backupKey = "";
+
+        window.onload = function() {
+            try {
+                var savedName = localStorage.getItem("cc_user_name");
+                var savedKey = localStorage.getItem("cc_id_key");
+                if (savedName && savedKey) {
+                    showMainScreen(savedName);
+                }
+            } catch (e) {
+                console.log("Storage blocked, using runtime backup variables.");
+            }
+        };
+
+        function saveAndContinue() {
+            var nameInput = document.getElementById("userNameInput").value.trim();
+            var keyInput = document.getElementById("idKeyInput").value.trim();
+
+            if (!nameInput || !keyInput) {
+                alert("חובה למלא את שני השדות כדי להמשיך!");
+                return;
+            }
+
+            try {
+                localStorage.setItem("cc_user_name", nameInput);
+                localStorage.setItem("cc_id_key", keyInput);
+            } catch (e) {
+                backupName = nameInput;
+                backupKey = keyInput;
+            }
+
+            showMainScreen(nameInput);
+        }
+
+        function showMainScreen(name) {
+            document.getElementById("loginScreen").style.display = "none";
+            document.getElementById("mainScreen").style.display = "block";
+            document.getElementById("welcomeTitle").innerText = "שלום, " + name;
+        }
+
+        function sendEmergencyTrigger() {
+            var statusDiv = document.getElementById("status");
+            statusDiv.innerText = "מפעיל את מערכת Pushover...";
+
+            var currentName = "משתמש";
+            var groupKey = "gjiauudzxnhxpmyabzs9gjrc3nj5st"; // ברירת מחדל של הקבוצה שלכם
+
+            try {
+                currentName = localStorage.getItem("cc_user_name") || backupName || "משתמש";
+                groupKey = localStorage.getItem("cc_id_key") || backupKey || groupKey;
+            } catch (e) {
+                currentName = backupName || "משתמש";
+                groupKey = backupKey || groupKey;
+            }
+
+            var rawMessage = "*** הקפצת חירום *** | הופעל על ידי: " + currentName;
+            var messageText = encodeURIComponent(rawMessage);
+
+            var pushoverUrl = "pushover://send?token=" + APP_TOKEN + "&user=" + groupKey + "&message=" + messageText + "&priority=2&retry=30&expire=3600&sound=persistent";
+
+            window.location.href = pushoverUrl;
+
+            setTimeout(function() {
+                statusDiv.innerText = "✅ פקודת ההקפצה נשלחה למערכת המכשיר";
+            }, 1000);
+        }
+    </script>
+
+</body>
+</html>
