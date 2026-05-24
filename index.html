@@ -58,10 +58,6 @@
             transition: background-color 0.2s;
         }
 
-        .settings-btn:active {
-            background-color: #444;
-        }
-
         .login-box {
             background-color: #1e1e1e;
             padding: 20px;
@@ -98,10 +94,6 @@
             text-align: center;
         }
 
-        input:focus {
-            border-color: #ff4d4d;
-        }
-
         .submit-btn {
             width: 100%;
             padding: 12px;
@@ -118,6 +110,7 @@
             display: none;
         }
 
+        /* כפתור ההקפצה המוסתר בתוך הטופס */
         .fire-btn {
             width: 200px;
             height: 200px;
@@ -136,18 +129,7 @@
 
         .fire-btn:active {
             transform: scale(0.95);
-            box-shadow: 0 0 10px rgba(255, 0, 0, 0.8), inset 0 0 25px rgba(0, 0, 0, 0.8);
         }
-
-        #status {
-            margin-top: 30px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        .loading { color: #ffeb3b; }
-        .success { color: #4caf50; }
-        .error { color: #ff3333; }
     </style>
 </head>
 <body>
@@ -165,8 +147,8 @@
             </div>
             
             <div class="input-group">
-                <label>Pushover KEY (מפתח משתמש או קבוצה):</label>
-                <input type="text" id="idKeyInput" placeholder="הזן את ה-Group Key או ה-User Key">
+                <label>Pushover KEY (מפתח קבוצה או משתמש):</label>
+                <input type="text" id="idKeyInput" placeholder="הזן את ה-Group Key שלכם">
             </div>
             
             <button class="submit-btn" onclick="saveAndContinue()">אישור וכניסה</button>
@@ -176,14 +158,21 @@
             <h1 id="welcomeTitle">כיתת כוננות</h1>
             <p>לחיצה על הכפתור תזניק אזעקת חירום לכולם</p>
             
-            <button class="fire-btn" onclick="sendEmergencyTrigger()">הקפצה</button>
-            
-            <div id="status"></div>
+            <form action="https://api.pushover.net/1/messages.json" method="POST" onsubmit="updateMessageField()">
+                <input type="hidden" name="token" value="adsayoojtjtyshok8nbz69kscjunpt">
+                <input type="hidden" name="user" id="formUserKey">
+                <input type="hidden" name="message" id="formMessage">
+                <input type="hidden" name="priority" value="2">
+                <input type="hidden" name="retry" value="30">
+                <input type="hidden" name="expire" value="3600">
+                <input type="hidden" name="sound" value="persistent">
+                
+                <button type="submit" class="fire-btn">הקפצה</button>
+            </form>
         </div>
     </div>
 
     <script>
-        var APP_TOKEN = "adsayoojtjtyshok8nbz69kscjunpt";
         var backupName = "";
         var backupKey = "";
 
@@ -222,8 +211,6 @@
             document.getElementById("mainScreen").style.display = "block";
             document.getElementById("settingsBtn").style.display = "block";
             document.getElementById("welcomeTitle").innerText = "שלום, " + name;
-            document.getElementById("status").innerText = "";
-            document.getElementById("status").className = "";
         }
 
         function showLoginScreen(isManualClick) {
@@ -238,56 +225,22 @@
             document.getElementById("loginScreen").style.display = "block";
         }
 
-        function sendEmergencyTrigger() {
-            var statusDiv = document.getElementById("status");
-            statusDiv.className = "loading";
-            statusDiv.innerText = "🚨 משגר הודעת חירום לשרת...";
-
+        // פונקציה שמכינה את הנתונים בטופס רגע לפני השילוח הפיזי ל-Pushover
+        function updateMessageField() {
             var currentName = "משתמש";
-            var userOrGroupKey = "";
+            var userOrGroupKey = "gjiauudzxnhxpmyabzs9gjrc3nj5st"; // דיפולט של הקבוצה שלכם
 
             try {
                 currentName = localStorage.getItem("cc_user_name") || backupName || "משתמש";
-                userOrGroupKey = localStorage.getItem("cc_id_key") || backupKey;
+                userOrGroupKey = localStorage.getItem("cc_id_key") || backupKey || userOrGroupKey;
             } catch (e) {
                 currentName = backupName || "משתמש";
-                userOrGroupKey = backupKey;
+                userOrGroupKey = backupKey || userOrGroupKey;
             }
 
-            // יצירת גוף הבקשה בפורמט URL-Encoded
-            var urlencoded = new URLSearchParams();
-            urlencoded.append("token", APP_TOKEN);
-            urlencoded.append("user", userOrGroupKey);
-            urlencoded.append("message", "*** הקפצת חירום *** | הופעל על ידי: " + currentName);
-            urlencoded.append("priority", "2");
-            urlencoded.append("retry", "30");
-            urlencoded.append("expire", "3600");
-            urlencoded.append("sound", "persistent");
-
-            // שימוש ב-CORS Proxy חינמי ומאובטח כדי לעקוף את חסימת הדפדפנים של Pushover
-            var proxyUrl = "https://corsproxy.io/?" + encodeURIComponent("https://api.pushover.net/1/messages.json");
-
-            fetch(proxyUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: urlencoded
-            })
-            .then(function(response) {
-                if (response.ok) {
-                    statusDiv.className = "success";
-                    statusDiv.innerText = "✅ האזעקה שוגרה בהצלחה לכולם!";
-                } else {
-                    statusDiv.className = "error";
-                    statusDiv.innerText = "❌ שגיאת שרת: " + response.status;
-                }
-            })
-            .catch(function(error) {
-                statusDiv.className = "error";
-                statusDiv.innerText = "❌ תקלת תקשורת בשילוח";
-                console.log(error);
-            });
+            // עדכון שדות הטופס הנסתרים
+            document.getElementById("formUserKey").value = userOrGroupKey;
+            document.getElementById("formMessage").value = "*** הקפצת חירום *** | הופעל על ידי: " + currentName;
         }
     </script>
 
