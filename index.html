@@ -22,6 +22,7 @@
             margin: 0;
             padding: 20px;
             box-sizing: border-box;
+            position: relative;
         }
 
         .container {
@@ -42,6 +43,27 @@
             margin-bottom: 30px;
         }
 
+        /* כפתור הגדרות בפינה העליונה */
+        .settings-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: #2a2a2a;
+            color: #ccc;
+            border: 1px solid #444;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            display: none; /* יוצג רק במסך הראשי */
+            transition: background-color 0.2s;
+        }
+
+        .settings-btn:active {
+            background-color: #444;
+        }
+
+        /* עיצוב טופס הרישום */
         .login-box {
             background-color: #1e1e1e;
             padding: 20px;
@@ -49,6 +71,8 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             margin-bottom: 20px;
             border: 1px solid #333;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .input-group {
@@ -127,6 +151,8 @@
 </head>
 <body>
 
+    <button id="settingsBtn" class="settings-btn" onclick="showLoginScreen(true)">⚙️ שינוי יוזר</button>
+
     <div class="container">
         <div id="loginScreen" class="login-box">
             <h1>רישום למערכת</h1>
@@ -196,7 +222,22 @@
         function showMainScreen(name) {
             document.getElementById("loginScreen").style.display = "none";
             document.getElementById("mainScreen").style.display = "block";
+            document.getElementById("settingsBtn").style.display = "block"; // מציג את כפתור שינוי היוזר
             document.getElementById("welcomeTitle").innerText = "שלום, " + name;
+            document.getElementById("status").innerText = ""; // מנקה סטטוס ישן
+        }
+
+        function showLoginScreen(isManualClick) {
+            if (isManualClick) {
+                // אם המשתמש לחץ ידנית, נמלא לו מראש את השדות במה ששמור כדי שיהיה קל לערוך
+                try {
+                    document.getElementById("userNameInput").value = localStorage.getItem("cc_user_name") || backupName;
+                    document.getElementById("idKeyInput").value = localStorage.getItem("cc_id_key") || backupKey;
+                } catch (e) {}
+            }
+            document.getElementById("mainScreen").style.display = "none";
+            document.getElementById("settingsBtn").style.display = "none"; // מחביא את כפתור שינוי היוזר בזמן עריכה
+            document.getElementById("loginScreen").style.display = "block";
         }
 
         function sendEmergencyTrigger() {
