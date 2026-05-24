@@ -110,7 +110,6 @@
             display: none;
         }
 
-        /* כפתור ההקפצה המוסתר בתוך הטופס */
         .fire-btn {
             width: 200px;
             height: 200px;
@@ -134,24 +133,29 @@
 </head>
 <body>
 
-    <button id="settingsBtn" class="settings-btn" onclick="showLoginScreen(true)">⚙️ שינוי יוזר</button>
+    <button id="settingsBtn" class="settings-btn" onclick="showLoginScreen(true)">⚙️ שינוי הגדרות</button>
 
     <div class="container">
         <div id="loginScreen" class="login-box">
-            <h1>רישום למערכת</h1>
-            <p>הזן פרטים חד-פעמית להפעלת המערכת</p>
+            <h1>הגדרת כפתור חירום</h1>
+            <p>הזן את נתוני המערכת שלכם</p>
             
             <div class="input-group">
-                <label>User Name (שם מלא בעברית):</label>
+                <label>שם מלא (עברית):</label>
                 <input type="text" id="userNameInput" placeholder="ישראל ישראלי">
             </div>
-            
+
             <div class="input-group">
-                <label>Pushover KEY (מפתח קבוצה או משתמש):</label>
-                <input type="text" id="idKeyInput" placeholder="הזן את ה-Group Key שלכם">
+                <label>Application Token (מפתח אפליקציה):</label>
+                <input type="text" id="appTokenInput" placeholder="הזן APP TOKEN חדש ותקין">
             </div>
             
-            <button class="submit-btn" onclick="saveAndContinue()">אישור וכניסה</button>
+            <div class="input-group">
+                <label>Group Key (מפתח קבוצה):</label>
+                <input type="text" id="groupKeyInput" placeholder="הזן GROUP KEY חדש ותקין">
+            </div>
+            
+            <button class="submit-btn" onclick="saveAndContinue()">שמירה וכניסה</button>
         </div>
 
         <div id="mainScreen">
@@ -159,8 +163,8 @@
             <p>לחיצה על הכפתור תזניק אזעקת חירום לכולם</p>
             
             <form action="https://api.pushover.net/1/messages.json" method="POST" onsubmit="updateMessageField()">
-                <input type="hidden" name="token" value="adsayoojtjtyshok8nbz69kscjunpt">
-                <input type="hidden" name="user" id="formUserKey">
+                <input type="hidden" name="token" id="formAppToken">
+                <input type="hidden" name="user" id="formGroupKey">
                 <input type="hidden" name="message" id="formMessage">
                 <input type="hidden" name="priority" value="2">
                 <input type="hidden" name="retry" value="30">
@@ -174,13 +178,16 @@
 
     <script>
         var backupName = "";
-        var backupKey = "";
+        var backupAppToken = "";
+        var backupGroupKey = "";
 
         window.onload = function() {
             try {
                 var savedName = localStorage.getItem("cc_user_name");
-                var savedKey = localStorage.getItem("cc_id_key");
-                if (savedName && savedKey) {
+                var savedAppToken = localStorage.getItem("cc_app_token");
+                var savedGroupKey = localStorage.getItem("cc_group_key");
+                
+                if (savedName && savedAppToken && savedGroupKey) {
                     showMainScreen(savedName);
                 }
             } catch (e) {}
@@ -188,19 +195,22 @@
 
         function saveAndContinue() {
             var nameInput = document.getElementById("userNameInput").value.trim();
-            var keyInput = document.getElementById("idKeyInput").value.trim();
+            var appTokenInput = document.getElementById("appTokenInput").value.trim();
+            var groupKeyInput = document.getElementById("groupKeyInput").value.trim();
 
-            if (!nameInput || !keyInput) {
-                alert("חובה למלא את שני השדות כדי להמשיך!");
+            if (!nameInput || !appTokenInput || !groupKeyInput) {
+                alert("חובה למלא את כל השדות כדי להמשיך!");
                 return;
             }
 
             try {
                 localStorage.setItem("cc_user_name", nameInput);
-                localStorage.setItem("cc_id_key", keyInput);
+                localStorage.setItem("cc_app_token", appTokenInput);
+                localStorage.setItem("cc_group_key", groupKeyInput);
             } catch (e) {
                 backupName = nameInput;
-                backupKey = keyInput;
+                backupAppToken = appTokenInput;
+                backupGroupKey = groupKeyInput;
             }
 
             showMainScreen(nameInput);
@@ -217,7 +227,8 @@
             if (isManualClick) {
                 try {
                     document.getElementById("userNameInput").value = localStorage.getItem("cc_user_name") || backupName;
-                    document.getElementById("idKeyInput").value = localStorage.getItem("cc_id_key") || backupKey;
+                    document.getElementById("appTokenInput").value = localStorage.getItem("cc_app_token") || backupAppToken;
+                    document.getElementById("groupKeyInput").value = localStorage.getItem("cc_group_key") || backupGroupKey;
                 } catch (e) {}
             }
             document.getElementById("mainScreen").style.display = "none";
@@ -225,21 +236,24 @@
             document.getElementById("loginScreen").style.display = "block";
         }
 
-        // פונקציה שמכינה את הנתונים בטופס רגע לפני השילוח הפיזי ל-Pushover
         function updateMessageField() {
             var currentName = "משתמש";
-            var userOrGroupKey = "gjiauudzxnhxpmyabzs9gjrc3nj5st"; // דיפולט של הקבוצה שלכם
+            var appToken = "";
+            var groupKey = "";
 
             try {
                 currentName = localStorage.getItem("cc_user_name") || backupName || "משתמש";
-                userOrGroupKey = localStorage.getItem("cc_id_key") || backupKey || userOrGroupKey;
+                appToken = localStorage.getItem("cc_app_token") || backupAppToken;
+                groupKey = localStorage.getItem("cc_group_key") || backupGroupKey;
             } catch (e) {
                 currentName = backupName || "משתמש";
-                userOrGroupKey = backupKey || userOrGroupKey;
+                appToken = backupAppToken;
+                groupKey = backupGroupKey;
             }
 
-            // עדכון שדות הטופס הנסתרים
-            document.getElementById("formUserKey").value = userOrGroupKey;
+            // הזנת הנתונים הפרטיים שהמשתמש שמר לתוך הטופס רגע לפני המשלוח
+            document.getElementById("formAppToken").value = appToken;
+            document.getElementById("formGroupKey").value = groupKey;
             document.getElementById("formMessage").value = "*** הקפצת חירום *** | הופעל על ידי: " + currentName;
         }
     </script>
