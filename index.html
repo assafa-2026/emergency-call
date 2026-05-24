@@ -43,7 +43,6 @@
             margin-bottom: 30px;
         }
 
-        /* כפתור הגדרות בפינה העליונה */
         .settings-btn {
             position: absolute;
             top: 20px;
@@ -55,7 +54,7 @@
             border-radius: 20px;
             font-size: 14px;
             cursor: pointer;
-            display: none; /* יוצג רק במסך הראשי */
+            display: none;
             transition: background-color 0.2s;
         }
 
@@ -63,7 +62,6 @@
             background-color: #444;
         }
 
-        /* עיצוב טופס הרישום */
         .login-box {
             background-color: #1e1e1e;
             padding: 20px;
@@ -156,7 +154,7 @@
     <div class="container">
         <div id="loginScreen" class="login-box">
             <h1>רישום למערכת</h1>
-            <p>הזן פרטים חד-פעמית להפעלת המערכת</p>
+            <p>הזן את פרטי ה-Pushover שלך</p>
             
             <div class="input-group">
                 <label>User Name (שם מלא בעברית):</label>
@@ -164,8 +162,8 @@
             </div>
             
             <div class="input-group">
-                <label>ID KEY / USER KEY (מפתח משתמש):</label>
-                <input type="text" id="idKeyInput" placeholder="הזן את ה-User Key האישי">
+                <label>Pushover KEY (מפתח משתמש או קבוצה):</label>
+                <input type="text" id="idKeyInput" placeholder="הדבק את ה-Key שלך מהאפליקציה">
             </div>
             
             <button class="submit-btn" onclick="saveAndContinue()">אישור וכניסה</button>
@@ -173,7 +171,7 @@
 
         <div id="mainScreen">
             <h1 id="welcomeTitle">כיתת כוננות</h1>
-            <p>לחיצה על הכפתור תזניק אזעקת חירום לכולם</p>
+            <p>לחיצה על הכפתור תזניק אזעקת חירום</p>
             
             <button class="fire-btn" onclick="sendEmergencyTrigger()">הקפצה</button>
             
@@ -182,6 +180,7 @@
     </div>
 
     <script>
+        // מפתח האפליקציה המבצעי שלכם
         var APP_TOKEN = "adsayoojtjtyshok8nbz69kscjunpt";
         
         var backupName = "";
@@ -194,9 +193,7 @@
                 if (savedName && savedKey) {
                     showMainScreen(savedName);
                 }
-            } catch (e) {
-                console.log("Storage blocked, using runtime backup variables.");
-            }
+            } catch (e) {}
         };
 
         function saveAndContinue() {
@@ -222,48 +219,53 @@
         function showMainScreen(name) {
             document.getElementById("loginScreen").style.display = "none";
             document.getElementById("mainScreen").style.display = "block";
-            document.getElementById("settingsBtn").style.display = "block"; // מציג את כפתור שינוי היוזר
+            document.getElementById("settingsBtn").style.display = "block";
             document.getElementById("welcomeTitle").innerText = "שלום, " + name;
-            document.getElementById("status").innerText = ""; // מנקה סטטוס ישן
+            document.getElementById("status").innerText = "";
         }
 
         function showLoginScreen(isManualClick) {
             if (isManualClick) {
-                // אם המשתמש לחץ ידנית, נמלא לו מראש את השדות במה ששמור כדי שיהיה קל לערוך
                 try {
                     document.getElementById("userNameInput").value = localStorage.getItem("cc_user_name") || backupName;
                     document.getElementById("idKeyInput").value = localStorage.getItem("cc_id_key") || backupKey;
                 } catch (e) {}
             }
             document.getElementById("mainScreen").style.display = "none";
-            document.getElementById("settingsBtn").style.display = "none"; // מחביא את כפתור שינוי היוזר בזמן עריכה
+            document.getElementById("settingsBtn").style.display = "none";
             document.getElementById("loginScreen").style.display = "block";
         }
 
         function sendEmergencyTrigger() {
             var statusDiv = document.getElementById("status");
-            statusDiv.innerText = "מפעיל את מערכת Pushover...";
+            statusDiv.innerText = "משגר הודעה...";
 
             var currentName = "משתמש";
-            var groupKey = "gjiauudzxnhxpmyabzs9gjrc3nj5st"; // ברירת מחדל של הקבוצה שלכם
+            var userOrGroupKey = "";
 
             try {
                 currentName = localStorage.getItem("cc_user_name") || backupName || "משתמש";
-                groupKey = localStorage.getItem("cc_id_key") || backupKey || groupKey;
+                userOrGroupKey = localStorage.getItem("cc_id_key") || backupKey;
             } catch (e) {
                 currentName = backupName || "משתמש";
-                groupKey = backupKey || groupKey;
+                userOrGroupKey = backupKey;
+            }
+
+            if (!userOrGroupKey) {
+                alert("שגיאה: מפתח המשתמש חסר. לחץ על שינוי יוזר והזן אותו שוב.");
+                return;
             }
 
             var rawMessage = "*** הקפצת חירום *** | הופעל על ידי: " + currentName;
             var messageText = encodeURIComponent(rawMessage);
 
-            var pushoverUrl = "pushover://send?token=" + APP_TOKEN + "&user=" + groupKey + "&message=" + messageText + "&priority=2&retry=30&expire=3600&sound=persistent";
+            // הקוד עכשיו שולח ישירות ל-Key שהמשתמש הזין במסך הרישום ללא התנגשויות
+            var pushoverUrl = "pushover://send?token=" + APP_TOKEN + "&user=" + userOrGroupKey + "&message=" + messageText + "&priority=2&retry=30&expire=3600&sound=persistent";
 
             window.location.href = pushoverUrl;
 
             setTimeout(function() {
-                statusDiv.innerText = "✅ פקודת ההקפצה נשלחה למערכת המכשיר";
+                statusDiv.innerText = "✅ נשלח לפקודת המכשיר";
             }, 1000);
         }
     </script>
