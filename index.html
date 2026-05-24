@@ -143,8 +143,11 @@
             margin-top: 30px;
             font-size: 18px;
             font-weight: bold;
-            color: #4caf50;
         }
+
+        .loading { color: #ffeb3b; }
+        .success { color: #4caf50; }
+        .error { color: #ff3333; }
     </style>
 </head>
 <body>
@@ -154,7 +157,7 @@
     <div class="container">
         <div id="loginScreen" class="login-box">
             <h1>רישום למערכת</h1>
-            <p>הזן את פרטי ה-Pushover שלך</p>
+            <p>הזן פרטים חד-פעמית להפעלת המערכת</p>
             
             <div class="input-group">
                 <label>User Name (שם מלא בעברית):</label>
@@ -163,7 +166,7 @@
             
             <div class="input-group">
                 <label>Pushover KEY (מפתח משתמש או קבוצה):</label>
-                <input type="text" id="idKeyInput" placeholder="הדבק את ה-Key שלך מהאפליקציה">
+                <input type="text" id="idKeyInput" placeholder="הזן את ה-Group Key או ה-User Key">
             </div>
             
             <button class="submit-btn" onclick="saveAndContinue()">אישור וכניסה</button>
@@ -171,7 +174,7 @@
 
         <div id="mainScreen">
             <h1 id="welcomeTitle">כיתת כוננות</h1>
-            <p>לחיצה על הכפתור תזניק אזעקת חירום</p>
+            <p>לחיצה על הכפתור תזניק אזעקת חירום לכולם</p>
             
             <button class="fire-btn" onclick="sendEmergencyTrigger()">הקפצה</button>
             
@@ -180,9 +183,7 @@
     </div>
 
     <script>
-        // מפתח האפליקציה המבצעי שלכם
         var APP_TOKEN = "adsayoojtjtyshok8nbz69kscjunpt";
-        
         var backupName = "";
         var backupKey = "";
 
@@ -222,6 +223,7 @@
             document.getElementById("settingsBtn").style.display = "block";
             document.getElementById("welcomeTitle").innerText = "שלום, " + name;
             document.getElementById("status").innerText = "";
+            document.getElementById("status").className = "";
         }
 
         function showLoginScreen(isManualClick) {
@@ -238,7 +240,8 @@
 
         function sendEmergencyTrigger() {
             var statusDiv = document.getElementById("status");
-            statusDiv.innerText = "משגר הודעה...";
+            statusDiv.className = "loading";
+            statusDiv.innerText = "🚨 משגר הודעת חירום לשרת...";
 
             var currentName = "משתמש";
             var userOrGroupKey = "";
@@ -251,22 +254,40 @@
                 userOrGroupKey = backupKey;
             }
 
-            if (!userOrGroupKey) {
-                alert("שגיאה: מפתח המשתמש חסר. לחץ על שינוי יוזר והזן אותו שוב.");
-                return;
-            }
+            // יצירת גוף הבקשה בפורמט URL-Encoded
+            var urlencoded = new URLSearchParams();
+            urlencoded.append("token", APP_TOKEN);
+            urlencoded.append("user", userOrGroupKey);
+            urlencoded.append("message", "*** הקפצת חירום *** | הופעל על ידי: " + currentName);
+            urlencoded.append("priority", "2");
+            urlencoded.append("retry", "30");
+            urlencoded.append("expire", "3600");
+            urlencoded.append("sound", "persistent");
 
-            var rawMessage = "*** הקפצת חירום *** | הופעל על ידי: " + currentName;
-            var messageText = encodeURIComponent(rawMessage);
+            // שימוש ב-CORS Proxy חינמי ומאובטח כדי לעקוף את חסימת הדפדפנים של Pushover
+            var proxyUrl = "https://corsproxy.io/?" + encodeURIComponent("https://api.pushover.net/1/messages.json");
 
-            // הקוד עכשיו שולח ישירות ל-Key שהמשתמש הזין במסך הרישום ללא התנגשויות
-            var pushoverUrl = "pushover://send?token=" + APP_TOKEN + "&user=" + userOrGroupKey + "&message=" + messageText + "&priority=2&retry=30&expire=3600&sound=persistent";
-
-            window.location.href = pushoverUrl;
-
-            setTimeout(function() {
-                statusDiv.innerText = "✅ נשלח לפקודת המכשיר";
-            }, 1000);
+            fetch(proxyUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: urlencoded
+            })
+            .then(function(response) {
+                if (response.ok) {
+                    statusDiv.className = "success";
+                    statusDiv.innerText = "✅ האזעקה שוגרה בהצלחה לכולם!";
+                } else {
+                    statusDiv.className = "error";
+                    statusDiv.innerText = "❌ שגיאת שרת: " + response.status;
+                }
+            })
+            .catch(function(error) {
+                statusDiv.className = "error";
+                statusDiv.innerText = "❌ תקלת תקשורת בשילוח";
+                console.log(error);
+            });
         }
     </script>
 
